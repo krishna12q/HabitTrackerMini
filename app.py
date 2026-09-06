@@ -1,46 +1,78 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Form, File, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, Field
-from pydantic_settings import BaseSettings
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from pathlib import Path
+import json
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from fastapi.responses import RedirectResponse
+
 
 app = FastAPI()
 
-# Point FastAPI to the templates directory
-templates = Jinja2Templates(directory="templates")
+DATA_FILE = Path("habits.json")
+HTML_FILE = Path("tracker.html")
 
-@app.get("/", response_class=HTMLResponse)
-def read_root(request: Request):
-    # Pass request as the first parameter or as a keyword argument
-    return templates.TemplateResponse(
-        request=request, 
-        name="tracker.html", 
-        context={
-            "habits": {
-                "gym": {
-                    "icon": "💪",
-                    "color": "blue",
-                    "completed": [
-                        "2026-08-01T18:30:00",
-                        "2026-08-03T07:45:00",
-                        "2026-08-05T19:10:00"
-                    ]
-                },
-                "reading": {
-                "icon": "📚",
-                "color": "yellow",
-                "completed": [
-                    "2026-08-02T20:30:00",
-                    "2026-08-04T21:00:00"
-                ]
+
+class Completion(BaseModel):
+    datetime: str
+
+
+def load_data() -> dict:
+    if not DATA_FILE.exists():
+        return {}
+
+    with DATA_FILE.open("r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def save_data(data: dict):
+    with DATA_FILE.open("w", encoding="utf-8") as file:
+        json.dump(data, file, indent=2)
+
+
+@app.get("/api/completions")
+def get_completions():
+    return load_data()
+
+
+@app.post("/api/completions/{habit}")
+def toggle_completion(habit: str, completion: Completion):
+    data = load_data()
+
+    if habit not in data:
+        data[habit] = []
+
+    # The frontend sends something like:
+    # 2026-09-05T12:00:00
+    date = completion.datetime[:10]
+
+    # Look for an existing completion on this date
+    existing = None
+
+    for value in data[habit]:
+        if value[:10] == date:
+            existing = value
+            break
+
+    if existing:
+        # Already completed → remove it
+        data[habit].remove(existing)
+        completed = False
+    else:
+        # Not completed → add it
+        data[habit].append(completion.datetime)
+        completed = True
+
+    save_data(data)
+
+    return {
+        "success": True,
+        "habit": habit,
+        "date": date,
+        "completed": completed
     }
-  }
-}
-    )
 
 
+@app.get("/")
+def home():
+    return FileResponse(HTML_FILE)

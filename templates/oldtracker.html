@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker</title>
+
+<style>
+*{box-sizing:border-box}
+
+html,body{
+    margin:0;
+    min-height:100%;
+    background:#07090c;
+    color:#f4f4f5;
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar{display:none}
+html{scrollbar-width:none}
+
+button,select,input{font:inherit}
+
+.app{
+    width:min(1180px,calc(100% - 48px));
+    margin:auto;
+    padding:28px 0 50px;
+}
+
+/* Top navigation */
+.toolbar{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    position:relative;
+    margin-bottom:28px;
+}
+
+.tabs{display:flex;gap:8px}
+
+.actions{
+    position:absolute;
+    right:0;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+button{
+    border:1px solid #20242a;
+    color:#e8e8ea;
+    background:#0c0f13;
+    border-radius:12px;
+    padding:10px 18px;
+    font-size:14px;
+    cursor:pointer;
+}
+
+button:hover{background:#171b20}
+
+.tab.active,
+.add{
+    background:#f3f4f7;
+    color:#4f56a9;
+    border-color:#ddd;
+}
+
+.add{font-weight:700}
+
+.page{display:none}
+.page.active{display:block}
+
+/* Month controls */
+.month-nav{
+    display:flex;
+    align-items:center;
+    gap:5px;
+}
+
+.nav-btn{
+    width:34px;
+    height:34px;
+    padding:0;
+    font-size:23px;
+    line-height:1;
+}
+
+.month-picker,
+.year-picker{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-height:36px;
+    padding:5px 8px 5px 11px;
+    background:#0c0f13;
+    border:1px solid #292d33;
+    border-radius:13px;
+}
+
+.month-picker span,
+.year-picker span{
+    color:#8d8f95;
+    font-size:10px;
+}
+
+.month-picker select,
+.year-picker select{
+    border:0;
+    outline:0;
+    background:transparent;
+    color:#eee;
+    padding:4px 18px 4px 1px;
+}
+
+.month-picker select{min-width:112px}
+.year-picker select{min-width:62px}
+
+option{background:#111113;color:#eee}
+
+/* Habits */
+.habit-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:18px;
+}
+
+.card{
+    background:linear-gradient(180deg,#121214,#101012);
+    border:1px solid #303033;
+    border-radius:19px;
+    padding:18px;
+    box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+
+.habit-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:24px;
+    min-width:0;
+}
+
+.check{
+    width:40px;
+    min-width:40px;
+    height:40px;
+    padding:0;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+    font-size:21px;
+}
+
+.check.done{
+    background:#2096e7;
+    border-color:#36a7f3;
+}
+
+.emoji{font-size:24px}
+
+.title-wrap{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+    min-width:0;
+}
+
+.title{
+    font-size:16px;
+    font-weight:750;
+}
+
+.spacer{flex:1;min-width:4px}
+
+.badge{
+    padding:3px 7px;
+    border-radius:7px;
+    background:#172f44;
+    color:#42a8ff;
+    font-size:10px;
+    font-weight:700;
+}
+
+.badge.gray{
+    background:#292a2d;
+    color:#c4c5c7;
+}
+
+.badge.yellow{
+    background:#2d290d;
+    color:#ffe55a;
+}
+
+.percent{
+    color:#aaa;
+    font-size:10px;
+    font-weight:600;
+}
+
+.icon-btn{
+    padding:5px;
+    color:#aaa;
+    background:transparent;
+    border:0;
+    font-size:17px;
+}
+
+.icon-btn:hover{color:#fff;background:#202124}
+
+/* Calendar */
+.calendar-wrap{
+    overflow:hidden;
+    padding:0 2px 2px;
+}
+
+.calendar{
+    display:grid;
+    grid-template-columns:38px repeat(6,18px);
+    grid-auto-rows:18px;
+    gap:5px;
+    width:max-content;
+}
+
+.month-title{
+    grid-column:2/8;
+    align-self:end;
+    padding-bottom:3px;
+    color:#8f9095;
+    font-size:11px;
+}
+
+.day-label{
+    align-self:center;
+    color:#888;
+    font-size:10px;
+}
+
+.cell{
+    width:18px;
+    height:18px;
+    border-radius:4px;
+    background:#282a2d;
+    border:1px solid #36383b;
+}
+
+.cell.active-blue{
+    background:#248edb;
+    border-color:#39a5f5;
+}
+
+.cell.active-yellow{
+    background:#ffd43e;
+    border-color:#ffdf61;
+}
+
+.cell.empty{
+    background:transparent;
+    border-color:transparent;
+}
+
+.cell.today{
+    outline:2px solid #6875ff;
+    outline-offset:1px;
+}
+
+.cell.done{
+    cursor:pointer;
+}
+
+.habit-tip{
+    margin-top:10px;
+    color:#6f7178;
+    font-size:10px;
+}
+
+.legend{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    margin-top:10px;
+    color:#888;
+    font-size:10px;
+}
+
+.legend .cell{
+    width:14px;
+    height:14px;
+}
+
+/* Add panel */
+.add-panel{
+    display:none;
+    margin-top:18px;
+}
+
+.add-panel.open{
+    display:block;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-top:20px;
+}
+
+label{
+    display:block;
+    margin-bottom:7px;
+    color:#aaa;
+    font-size:12px;
+}
+
+input,select{
+    width:100%;
+    background:#0b0d10;
+    color:#eee;
+    border:1px solid #303338;
+    border-radius:10px;
+    padding:11px 12px;
+    outline:0;
+}
+
+input:focus,select:focus{
+    border-color:#666;
+}
+
+.modal-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+}
+
+.modal-kicker{
+    margin-bottom:5px;
+    color:#777;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.12em;
+}
+
+.modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:18px;
+}
+
+.save{
+    background:#f3f4f7;
+    color:#4f56a9;
+    border-color:#ddd;
+    font-weight:700;
+}
+
+/* Statistics */
+.stats-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-bottom:14px;
+}
+
+.stat-card{
+    background:#111113;
+    border:1px solid #303033;
+    border-radius:18px;
+    padding:20px;
+}
+
+.stat-label{
+    margin-bottom:9px;
+    color:#999;
+    font-size:12px;
+}
+
+.stat-value{
+    font-size:28px;
+    font-weight:750;
+}
+
+.stat-sub{
+    margin-top:5px;
+    color:#777;
+    font-size:11px;
+}
+
+.panel-title{
+    margin-bottom:18px;
+    font-size:16px;
+    font-weight:700;
+}
+
+.bar-row{
+    display:grid;
+    grid-template-columns:110px 1fr 45px;
+    gap:12px;
+    align-items:center;
+    margin:15px 0;
+    font-size:12px;
+}
+
+.bar{
+    height:12px;
+    background:#25272b;
+    border-radius:99px;
+    overflow:hidden;
+}
+
+.fill{
+    height:100%;
+    background:#278fdc;
+    border-radius:99px;
+}
+
+.stat-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+}
+
+.stat-table th{
+    padding:0 10px 12px;
+    color:#888;
+    font-size:11px;
+    text-align:left;
+}
+
+.stat-table td{
+    padding:13px 10px;
+    border-top:1px solid #242427;
+}
+
+.mini-grid{
+    display:grid;
+    grid-template-columns:repeat(30,1fr);
+    gap:4px;
+}
+
+.mini-grid .cell{
+    width:auto;
+    height:14px;
+}
+
+/* Manage */
+.manage-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:15px 0;
+    border-top:1px solid #242427;
+}
+
+.manage-row:first-of-type{border-top:0}
+.drag{color:#666;font-size:18px}
+.manage-info{flex:1}
+.manage-name{font-weight:700}
+.manage-meta{margin-top:3px;color:#777;font-size:11px}
+
+.toggle{
+    width:44px;
+    height:25px;
+    padding:2px;
+    border-radius:20px;
+    background:#292b30;
+    border:0;
+}
+
+.toggle span{
+    display:block;
+    width:21px;
+    height:21px;
+    border-radius:50%;
+    background:#aaa;
+    transition:.15s;
+}
+
+.toggle.on{background:#8054e8}
+.toggle.on span{
+    transform:translateX(19px);
+    background:#fff;
+}
+
+@media(max-width:900px){
+    .app{width:calc(100% - 24px)}
+    .toolbar{
+        justify-content:space-between;
+        gap:10px;
+        flex-wrap:wrap;
+    }
+    .actions{position:static}
+    .habit-grid{grid-template-columns:1fr 1fr}
+}
+
+@media(max-width:700px){
+    .habit-grid{grid-template-columns:1fr}
+    .tabs{width:100%}
+    .tabs button{flex:1}
+}
+
+@media(max-width:520px){
+    .stats-grid{grid-template-columns:1fr 1fr}
+    .form-grid{grid-template-columns:1fr}
+}
+
+.data-status{
+    margin:0 0 14px;
+    color:#777;
+    font-size:11px;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+    <header class="toolbar">
+        <nav class="tabs">
+            <button class="tab active" data-page="calendar">Calendar</button>
+            <button class="tab" data-page="statistics">Statistics</button>
+            <button class="tab" data-page="manage">Manage</button>
+        </nav>
+
+        <div class="actions">
+            <div class="month-nav">
+                <button class="nav-btn" id="prevMonth">‹</button>
+
+                <label class="month-picker">
+                    <span>Month</span>
+                    <select id="monthSelect">
+                        <option value="0">January</option>
+                        <option value="1">February</option>
+                        <option value="2">March</option>
+                        <option value="3">April</option>
+                        <option value="4">May</option>
+                        <option value="5">June</option>
+                        <option value="6">July</option>
+                        <option value="7" selected>August</option>
+                        <option value="8">September</option>
+                        <option value="9">October</option>
+                        <option value="10">November</option>
+                        <option value="11">December</option>
+                    </select>
+                </label>
+
+                <label class="year-picker">
+                    <span>Year</span>
+                    <select id="yearSelect"></select>
+                </label>
+
+                <button class="nav-btn" id="nextMonth">›</button>
+            </div>
+
+            <button class="add" id="addHabit">＋ Add</button>
+        </div>
+    </header>
+
+    <!-- CALENDAR -->
+    <main id="calendar" class="page active">
+<div class="data-status" id="dataStatus">Loading habit data…</div>
+
+        <div class="habit-grid">
+
+            <section class="card">
+                <div class="habit-head">
+                    <button class="check" id="gymCheck"></button>
+                    <span class="emoji">💪</span>
+
+                    <div class="title-wrap">
+                        <span class="title">gym</span>
+                        <span class="badge">2-day streak</span>
+                        <span class="badge gray">Best: 2</span>
+                        <span class="percent">52%</span>
+                    </div>
+
+                    <div class="spacer"></div>
+                    <button class="icon-btn">✎</button>
+                    <button class="icon-btn">×</button>
+                </div>
+
+                <div class="calendar-wrap">
+                    <div class="calendar" id="gym"></div>
+                </div>
+
+                <div class="habit-tip">Completion dates come from FastAPI.</div>
+
+                <div class="legend">
+                    Less
+                    <span class="cell"></span>
+                    <span class="cell" style="background:#1b527d"></span>
+                    <span class="cell active-blue"></span>
+                    <span class="cell active-blue" style="background:#3b9de3"></span>
+                    More
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="habit-head">
+                    <button class="check" id="readingCheck"></button>
+                    <span class="emoji">📚</span>
+
+                    <div class="title-wrap">
+                        <span class="title">reading</span>
+                        <span class="badge yellow">No streak</span>
+                        <span class="badge gray">Best: 1</span>
+                        <span class="percent">48%</span>
+                    </div>
+
+                    <div class="spacer"></div>
+                    <button class="icon-btn">✎</button>
+                    <button class="icon-btn">×</button>
+                </div>
+
+                <div class="calendar-wrap">
+                    <div class="calendar" id="reading"></div>
+                </div>
+
+                <div class="habit-tip">Completion dates come from FastAPI.</div>
+
+                <div class="legend">
+                    Less
+                    <span class="cell"></span>
+                    <span class="cell" style="background:#6e5f21"></span>
+                    <span class="cell active-yellow"></span>
+                    <span class="cell" style="background:#ffe36b"></span>
+                    More
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Add habit panel -->
+        <section class="card add-panel" id="habitEditor">
+            <div class="modal-head">
+                <div>
+                    <div class="modal-kicker">NEW HABIT</div>
+                    <div class="panel-title" style="margin:0;font-size:20px">Add a new habit</div>
+                </div>
+                <button class="icon-btn" id="closeEditor">×</button>
+            </div>
+
+            <form action="/api/habits" method="post">
+
+    <label>Habit name</label>
+    <input name="name" placeholder="e.g. Workout">
+
+    <label>Icon</label>
+    <input name="icon" value="✨">
+
+    <label>Goal</label>
+    <select name="goal">
+        <option>Every day</option>
+        <option>Weekdays</option>
+        <option>3 days a week</option>
+    </select>
+
+    <label>Color</label>
+    <select name="color">
+        <option>Blue</option>
+        <option>Yellow</option>
+        <option>Green</option>
+        <option>Purple</option>
+    </select>
+
+    <button type="submit">Add Habit</button>
+
+</form>
+        </section>
+    </main>
+
+    <!-- STATISTICS -->
+    <main id="statistics" class="page">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">TOTAL HABITS</div>
+                <div class="stat-value">2</div>
+                <div class="stat-sub">Currently active</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">TODAY</div>
+                <div class="stat-value">1 / 2</div>
+                <div class="stat-sub">50% completed</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">BEST STREAK</div>
+                <div class="stat-value">2</div>
+                <div class="stat-sub">gym</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">OVERALL</div>
+                <div class="stat-value">50%</div>
+                <div class="stat-sub">This year</div>
+            </div>
+        </div>
+
+        <section class="card">
+            <div class="panel-title">Habit performance</div>
+
+            <div class="bar-row">
+                <span>💪 gym</span>
+                <div class="bar"><div class="fill" style="width:52%"></div></div>
+                <span>52%</span>
+            </div>
+
+            <div class="bar-row">
+                <span>📚 reading</span>
+                <div class="bar"><div class="fill" style="width:48%"></div></div>
+                <span>48%</span>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="panel-title">Last 30 days</div>
+            <div class="mini-grid" id="miniGrid"></div>
+        </section>
+
+        <section class="card">
+            <div class="panel-title">Summary</div>
+
+            <table class="stat-table">
+                <thead>
+                    <tr>
+                        <th>HABIT</th>
+                        <th>COMPLETION</th>
+                        <th>CURRENT STREAK</th>
+                        <th>BEST</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>💪 gym</td>
+                        <td>52%</td>
+                        <td>2 days</td>
+                        <td>2 days</td>
+                    </tr>
+
+                    <tr>
+                        <td>📚 reading</td>
+                        <td>48%</td>
+                        <td>0 days</td>
+                        <td>1 day</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <!-- MANAGE -->
+    <main id="manage" class="page">
+        <section class="card">
+            <div class="panel-title">Manage habits</div>
+
+            <div class="manage-row">
+                <span class="drag">☷</span>
+                <span class="emoji">💪</span>
+                <div class="manage-info">
+                    <div class="manage-name">gym</div>
+                    <div class="manage-meta">16 completions · Best streak 2</div>
+                </div>
+                <button class="toggle on"><span></span></button>
+                <button class="icon-btn">✎</button>
+                <button class="icon-btn">×</button>
+            </div>
+
+            <div class="manage-row">
+                <span class="drag">☷</span>
+                <span class="emoji">📚</span>
+                <div class="manage-info">
+                    <div class="manage-name">reading</div>
+                    <div class="manage-meta">15 completions · Best streak 1</div>
+                </div>
+                <button class="toggle on"><span></span></button>
+                <button class="icon-btn">✎</button>
+                <button class="icon-btn">×</button>
+            </div>
+        </section>
+    </main>
+
+</div>
+
+<script>
+
+/*
+  BACKEND CONTRACT
+
+  GET /api/completions
+
+  Response:
+  {
+    "gym": [
+      "2026-08-01T18:30:00",
+      "2026-08-03T07:45:00"
+    ],
+    "reading": [
+      "2026-08-02T20:30:00"
+    ]
+  }
+
+  POST /api/completions/{habit}
+
+  Body:
+  {
+    "datetime": "2026-08-31T20:25:00"
+  }
+*/
+
+/*
+    PYTHON / FASTAPI DATA
+
+    GET /api/completions
+
+    Expected response:
+
+    {
+        "gym": [
+            "2026-08-01T18:30:00",
+            "2026-08-03T07:45:00"
+        ],
+        "reading": [
+            "2026-08-02T20:30:00"
+        ]
+    }
+
+    For now this demo data lets the HTML work by itself.
+    Replace the object with the FastAPI response later.
+*/
+
+let backendData = {};
+let dataLoaded = false;
+
+async function loadData(){
+    try{
+        const response = await fetch("/api/completions");
+
+        if(!response.ok){
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        backendData = await response.json();
+        dataLoaded = true;
+        const status = document.getElementById("dataStatus");
+        if(status){
+            status.textContent = "Connected to FastAPI";
+        }
+        render();
+    }catch(error){
+        console.error("Could not load habit data:", error);
+
+        // Keep the page usable if the backend is unavailable.
+        backendData = {};
+        const status = document.getElementById("dataStatus");
+        if(status){
+            status.textContent = "FastAPI is not running";
+        }
+        render();
+    }
+}
+
+async function sendCompletion(habit, date) {
+
+    const response = await fetch(`/api/completions/${habit}`, {
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            datetime: `${date}T12:00:00`
+        })
+    });
+
+    if (!response.ok) {
+        console.error("Failed to save completion");
+        return;
+    }
+
+    console.log("Saved:", habit, date);
+}
+
+document.addEventListener("click", async (event) => {
+
+    const cell = event.target.closest(".cell[data-habit]");
+
+    if (!cell) {
+        return;
+    }
+
+    const habit = cell.dataset.habit;
+    const date = cell.dataset.date;
+
+    await sendCompletion(habit, date);
+});
+
+const monthNames = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+];
+
+const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+const monthSelect = document.getElementById("monthSelect");
+const yearSelect = document.getElementById("yearSelect");
+
+function formatDate(date){
+    return date.getFullYear()
+        + "-" + String(date.getMonth()+1).padStart(2,"0")
+        + "-" + String(date.getDate()).padStart(2,"0");
+}
+
+function makeCalendar(id, habit){
+    const root = document.getElementById(id);
+    root.innerHTML = "";
+
+    const month = Number(monthSelect.value);
+    const year = Number(yearSelect.value);
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    root.appendChild(document.createElement("div"));
+
+    const title = document.createElement("div");
+    title.className = "month-title";
+    title.textContent = monthNames[month] + " " + year;
+    root.appendChild(title);
+
+    dayNames.forEach((name, row) => {
+        const label = document.createElement("div");
+        label.className = "day-label";
+        label.textContent = name;
+        label.style.gridColumn = "1";
+        label.style.gridRow = row + 2;
+        root.appendChild(label);
+    });
+
+    const completed = new Set(
+        (backendData[habit] || []).map(value => String(value).slice(0,10))
+    );
+
+    for(let week = 0; week < 6; week++){
+        for(let dow = 0; dow < 7; dow++){
+
+            const day = week * 7 + dow - firstDay + 1;
+
+            const cell = document.createElement("div");
+
+            cell.style.gridColumn = week + 2;
+            cell.style.gridRow = dow + 2;
+
+            if(day < 1 || day > daysInMonth){
+                cell.className = "cell empty";
+                root.appendChild(cell);
+                continue;
+            }
+
+            const date = new Date(year, month, day);
+            const key = formatDate(date);
+
+            cell.className = "cell done";
+            cell.dataset.habit = habit;
+            cell.dataset.date = key;
+            cell.classList.add("cell", "clickable");
+            cell.title = key;
+
+            if(completed.has(key)){
+                cell.classList.add(
+                    habit === "gym"
+                        ? "active-blue"
+                        : "active-yellow"
+                );
+            }
+
+            if(key === formatDate(new Date())){
+                cell.classList.add("today");
+            }
+
+            root.appendChild(cell);
+        }
+    }
+}
+
+function render(){
+    makeCalendar("gym","gym");
+    makeCalendar("reading","reading");
+}
+
+function populateYears(){
+    const currentYear = new Date().getFullYear();
+
+    for(let year = currentYear - 5; year <= currentYear + 5; year++){
+        const option = document.createElement("option");
+        option.value = year;
+        option.textContent = year;
+
+        if(year === 2026){
+            option.selected = true;
+        }
+
+        yearSelect.appendChild(option);
+    }
+}
+
+function ensureYear(year){
+    if([...yearSelect.options].some(option => Number(option.value) === year)){
+        return;
+    }
+
+    const option = document.createElement("option");
+    option.value = year;
+    option.textContent = year;
+
+    yearSelect.appendChild(option);
+
+    [...yearSelect.options]
+        .sort((a,b) => Number(a.value) - Number(b.value))
+        .forEach(option => yearSelect.appendChild(option));
+}
+
+/* Initial state */
+populateYears();
+monthSelect.value = String(new Date().getMonth());
+loadData();
+
+/* Month/year navigation */
+monthSelect.addEventListener("change", render);
+yearSelect.addEventListener("change", render);
+
+document.getElementById("prevMonth").addEventListener("click", () => {
+    let month = Number(monthSelect.value);
+    let year = Number(yearSelect.value);
+
+    if(month === 0){
+        month = 11;
+        year--;
+        ensureYear(year);
+    }else{
+        month--;
+    }
+
+    monthSelect.value = month;
+    yearSelect.value = year;
+    render();
+});
+
+document.getElementById("nextMonth").addEventListener("click", () => {
+    let month = Number(monthSelect.value);
+    let year = Number(yearSelect.value);
+
+    if(month === 11){
+        month = 0;
+        year++;
+        ensureYear(year);
+    }else{
+        month++;
+    }
+
+    monthSelect.value = month;
+    yearSelect.value = year;
+    render();
+});
+
+/* Page switching */
+document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
+        document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
+
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.page).classList.add("active");
+    });
+});
+
+/*
+  Completion interaction:
+  The browser sends the change to FastAPI.
+*/
+
+/* Add habit panel */
+const editor = document.getElementById("habitEditor");
+
+document.getElementById("addHabit").addEventListener("click", () => {
+    editor.classList.add("open");
+    editor.scrollIntoView({behavior:"smooth", block:"nearest"});
+    document.getElementById("newHabitName").focus();
+});
+
+function closeEditor(){
+    editor.classList.remove("open");
+}
+
+document.getElementById("closeEditor").addEventListener("click", closeEditor);
+document.getElementById("cancelEditor").addEventListener("click", closeEditor);
+
+document.getElementById("saveHabit").addEventListener("click", () => {
+    const name = document.getElementById("newHabitName").value.trim();
+
+    if(!name){
+        return;
+    }
+
+    alert("Habit is ready to be sent to FastAPI: " + name);
+
+    document.getElementById("newHabitName").value = "";
+    closeEditor();
+});
+
+/* Header completion buttons */
+document.getElementById("gymCheck").addEventListener("click", event => {
+    event.currentTarget.classList.toggle("done");
+    event.currentTarget.textContent =
+        event.currentTarget.classList.contains("done") ? "✓" : "";
+});
+
+document.getElementById("readingCheck").addEventListener("click", event => {
+    event.currentTarget.classList.toggle("done");
+    event.currentTarget.textContent =
+        event.currentTarget.classList.contains("done") ? "✓" : "";
+});
+
+/* Manage toggles */
+document.querySelectorAll(".toggle").forEach(button => {
+    button.addEventListener("click", () => button.classList.toggle("on"));
+});
+
+/* Tiny demo stats grid */
+const miniGrid = document.getElementById("miniGrid");
+
+for(let i = 0; i < 60; i++){
+    const cell = document.createElement("div");
+    cell.className = "cell";
+
+    if(i % 5 === 0 || i % 11 === 0){
+        cell.classList.add("active-blue");
+    }
+
+    if(i % 17 === 0){
+        cell.classList.add("active-yellow");
+    }
+
+    miniGrid.appendChild(cell);
+}
+
+async function sendCompletion(habit, date) {
+    try {
+        const response = await fetch(`/api/completions/${habit}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                datetime: `${date}T12:00:00`
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        console.log("Saved:", habit, date);
+
+        // Get the updated data from FastAPI
+        await loadData();
+
+    } catch (error) {
+        console.error("Failed to save completion:", error);
+    }
+}
+
+
+document.addEventListener("click", async (event) => {
+
+    const cell = event.target.closest(".cell[data-habit]");
+
+    if (!cell) {
+        return;
+    }
+
+    await sendCompletion(
+        cell.dataset.habit,
+        cell.dataset.date
+    );
+
+});
+</script>
+
+</body>
+</html>

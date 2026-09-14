@@ -46,30 +46,29 @@ def get_completions():
 
 @app.post("/api/completions/{habit}")
 def toggle_completion(habit: str, completion: Completion):
+
     data = load_data()
 
     if habit not in data:
-        data[habit] = []
+        data[habit] = {
+            "created": datetime.now().astimezone().isoformat(),
+            "completions": []
+        }
 
-    # The frontend sends something like:
-    # 2026-09-05T12:00:00
     date = completion.datetime[:10]
 
-    # Look for an existing completion on this date
     existing = None
 
-    for value in data[habit]:
+    for value in data[habit]["completions"]:
         if value[:10] == date:
             existing = value
             break
 
     if existing:
-        # Already completed → remove it
-        data[habit].remove(existing)
+        data[habit]["completions"].remove(existing)
         completed = False
     else:
-        # Not completed → add it
-        data[habit].append(completion.datetime)
+        data[habit]["completions"].append(completion.datetime)
         completed = True
 
     save_data(data)
@@ -86,11 +85,31 @@ def toggle_completion(habit: str, completion: Completion):
 def home(request: Request):
     data = load_data()
 
+    # Find habit with the most completions
+    best_habit = None
+    best_count = 0
+
+    # Count every completion across every habit
+    overall_completions = 0
+
+    for name, habit in data.items():
+        count = len(habit["completions"])
+
+        if count > best_count:
+            best_count = count
+            best_habit = name
+
+        overall_completions += count
+
     return templates.TemplateResponse(
-        "tracker.html",
-        {
+        request=request,
+        name="tracker.html",
+        context={
             "request": request,
-            "habits": data
+            "habits": data,
+            "best_habit": best_habit,
+            "best_count": best_count,
+            "overall_completions": overall_completions
         }
     )
 
@@ -124,10 +143,11 @@ def add_habit(
     data.update(info)
 
     # 3. Save everything back
-    with open("data.json", "w") as f:
+    with open("habits.json", "w") as f:
         json.dump(data, f, indent=4)
 
 
     print(name, icon, goal, color)
 
     return {"success": True}
+

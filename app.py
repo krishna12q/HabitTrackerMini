@@ -151,3 +151,22 @@ def add_habit(
 
     return {"success": True}
 
+@app.delete("/api/habits/{habit}")
+def delete_habit(habit: str):
+
+    data = load_data()
+
+    if habit not in data:
+        return {
+            "success": False,
+            "message": "Habit not found"
+        }
+
+    del data[habit]
+
+    save_data(data)
+
+    return {
+        "success": True,
+        "habit": habit
+    }

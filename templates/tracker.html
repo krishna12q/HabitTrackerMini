@@ -40,6 +40,8 @@ label{display:block;margin-bottom:7px;color:#aaa;font-size:12px}input,select{wid
 @media(max-width:900px){.app{width:calc(100% - 24px)}.toolbar{justify-content:space-between;gap:10px;flex-wrap:wrap}.actions{position:static}.habit-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.habit-grid{grid-template-columns:1fr}.tabs{width:100%}.tabs button{flex:1}}
 @media(max-width:520px){.stats-grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}}
+
+.delete-dialog{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);align-items:center;justify-content:center;z-index:1000}.delete-dialog.open{display:flex}.delete-box{width:min(400px,calc(100% - 40px));background:#121214;border:1px solid #303033;border-radius:16px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4)}.delete-title{font-size:17px;font-weight:700;margin-bottom:10px}.delete-message{color:#aaa;font-size:13px;line-height:1.5}.delete-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.delete-confirm{background:#d33;color:#fff;border-color:#d33}.delete-confirm:hover{background:#b72a2a}
 </style>
 </head>
 <body>
@@ -80,7 +82,14 @@ label{display:block;margin-bottom:7px;color:#aaa;font-size:12px}input,select{wid
 </div>
 <div class="spacer"></div>
 <button class="icon-btn" type="button" title="Edit">✎</button>
-<button class="icon-btn" type="button" title="Delete">×</button>
+<button
+    class="icon-btn"
+    type="button"
+    title="Delete"
+    onclick='openDeleteDialog({{ name|tojson }})'
+>
+    ×
+</button>
 </div>
 <div class="calendar-wrap">
 <div class="calendar habit-calendar" data-habit="{{ name }}"></div>
@@ -312,6 +321,40 @@ document.addEventListener("click",event=>{
 for(const button of document.querySelectorAll(".toggle")){
     button.addEventListener("click",()=>button.classList.toggle("on"));
 }
+
+
+// Delete habit confirmation
+let habitToDelete = null;
+function openDeleteDialog(habit){
+    habitToDelete = habit;
+    document.getElementById("deleteDialog").classList.add("open");
+}
+function closeDeleteDialog(){
+    habitToDelete = null;
+    document.getElementById("deleteDialog").classList.remove("open");
+}
+async function confirmDelete(){
+    if(!habitToDelete){return;}
+    try{
+        const response = await fetch(`/api/habits/${encodeURIComponent(habitToDelete)}`, {method:"DELETE"});
+        if(!response.ok){throw new Error(`HTTP ${response.status}`);}
+        window.location.reload();
+    }catch(error){
+        console.error("Failed to delete habit:", error);
+    }
+}
+
 </script>
+
+<div id="deleteDialog" class="delete-dialog">
+    <div class="delete-box">
+        <div class="delete-title">Delete habit?</div>
+        <div class="delete-message">Are you sure you want to delete this?<br>This will delete all of its completions.</div>
+        <div class="delete-actions">
+            <button type="button" onclick="closeDeleteDialog()">Cancel</button>
+            <button type="button" class="delete-confirm" onclick="confirmDelete()">Yes, Delete</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
